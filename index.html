@@ -1,0 +1,1132 @@
+import { useState, useEffect, useCallback } from "react";
+
+/* ─── CSS ──────────────────────────────────────────────────────────────────── */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ink:#0D0C0A;--paper:#F9F6F1;--mist:#EDE9E2;--line:#DDD8CF;--grey:#9A9590;
+  --gold:#996515;--gold-l:#C4882A;--gold-bg:#FBF7EF;
+  --rouge:#7B1F33;--rouge-l:#A8354D;--rouge-bg:#FDF1F3;
+  --marine:#16355A;--marine-l:#2563A8;--marine-bg:#EEF3FB;
+}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:'Outfit',sans-serif;font-size:14px;line-height:1.65;min-height:100vh}
+
+/* NAV */
+nav{background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:54px;position:sticky;top:0;z-index:50;gap:12px}
+.brand{font-family:'Playfair Display',serif;font-size:17px;color:#F9F6F1;letter-spacing:.3px;white-space:nowrap;cursor:pointer;border:none;background:none}
+.brand em{font-style:italic;color:var(--gold-l)}
+.tabs{display:flex;overflow-x:auto}
+.tab-group{display:flex;align-items:center}
+.tab{height:54px;padding:0 16px;border:none;background:none;font-family:'Outfit',sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.38);cursor:pointer;border-bottom:2px solid transparent;transition:.2s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tab:hover{color:rgba(255,255,255,.7)}
+.tab.on[data-id=sh]{color:#fff;border-bottom-color:var(--gold-l)}
+.tab.on[data-id=yo]{color:#fff;border-bottom-color:var(--rouge-l)}
+.tab.on[data-id=jc]{color:#fff;border-bottom-color:var(--marine-l)}
+.copy-tab{height:30px;padding:0 8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.35);font-size:11px;cursor:pointer;transition:.2s;display:flex;align-items:center;margin-left:2px;margin-right:8px;border-radius:2px;white-space:nowrap;font-family:'Outfit',sans-serif;letter-spacing:.5px}
+.copy-tab:hover{background:rgba(255,255,255,.12);color:#fff}
+.copy-tab.done{color:var(--gold-l);border-color:var(--gold-l)}
+.back-link{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.5);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;background:none;font-family:'Outfit',sans-serif;transition:.2s}
+.back-link:hover{color:#fff}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-form-label{font-family:'Playfair Display',serif;font-size:15px;color:rgba(255,255,255,.75);font-style:italic}
+
+/* PANELS */
+.panel{display:none}.panel.on{display:block;animation:rise .3s ease}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* HERO */
+.hero{padding:52px 44px 36px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 80% at 110% 50%,var(--ac-bg,#FBF7EF) 0%,transparent 70%)}
+.hero-tag{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--ac,var(--gold));margin-bottom:12px}
+.hero-name{font-family:'Playfair Display',serif;font-size:clamp(38px,5.5vw,68px);font-weight:700;line-height:1;margin-bottom:6px}
+.hero-name i{font-style:italic;color:var(--ac,var(--gold))}
+.hero-role{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--grey);margin-bottom:14px}
+.hero-sub{font-size:14px;color:#555;max-width:500px;line-height:1.7}
+.hero-badge{position:absolute;top:44px;right:44px;border:1px solid var(--ac,var(--gold));color:var(--ac,var(--gold));font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:8px 18px}
+
+/* PROGRESS */
+.prog{background:var(--mist);border-bottom:1px solid var(--line);padding:14px 44px;display:flex;align-items:center;gap:16px}
+.bars{display:flex;gap:8px;flex:1}
+.bar{height:2px;flex:1;background:var(--line);transition:.4s}
+.bar.done{background:var(--ac,var(--gold))}
+.bar.now{background:var(--ac-l,var(--gold-l))}
+.prog-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--grey);white-space:nowrap}
+
+/* FORM BODY */
+.body{max-width:720px;margin:0 auto;padding:48px 44px 80px}
+.step{display:none}.step.on{display:block;animation:rise .28s ease}
+.step-tag{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--ac,var(--gold));margin-bottom:8px}
+.step-h{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:6px;line-height:1.1}
+.step-hint{font-size:13px;color:var(--grey);margin-bottom:32px}
+
+/* FIELDS */
+.fields{display:flex;flex-direction:column;gap:22px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.field{display:flex;flex-direction:column;gap:6px}
+.lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:var(--ink)}
+.lbl .req{color:var(--ac,var(--gold))}
+.hint{font-size:11px;color:var(--grey);margin-top:-2px}
+input[type=text],input[type=email],input[type=tel],input[type=date],select,textarea{width:100%;padding:12px 15px;border:1.5px solid var(--line);background:#fff;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--ac,var(--gold));box-shadow:0 0 0 3px var(--ac-bg,var(--gold-bg))}
+textarea{resize:vertical;min-height:92px;line-height:1.65}
+select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
+
+/* OPTIONS */
+.opts{display:grid;gap:9px}
+.opts.c2{grid-template-columns:1fr 1fr}.opts.c3{grid-template-columns:1fr 1fr 1fr}
+.opt{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border:1.5px solid var(--line);background:#fff;cursor:pointer;transition:.2s;user-select:none}
+.opt:hover{border-color:var(--ac,var(--gold));background:var(--ac-bg,var(--gold-bg))}
+.opt.on{border-color:var(--ac,var(--gold));background:var(--ac-bg,var(--gold-bg))}
+.check{width:17px;height:17px;border:2px solid var(--line);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:.2s}
+.opt.on .check{background:var(--ac,var(--gold));border-color:var(--ac,var(--gold))}
+.opt.on .check::after{content:'✓';color:#fff;font-size:10px;font-weight:700}
+.ot{font-size:13px;font-weight:500}
+.od{font-size:11px;color:var(--grey);margin-top:2px;line-height:1.35}
+
+/* CHIPS */
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:7px 16px;border:1.5px solid var(--line);background:#fff;cursor:pointer;font-size:12px;letter-spacing:.3px;transition:.2s;color:var(--ink);font-family:'Outfit',sans-serif;user-select:none}
+.chip:hover{border-color:var(--ac,var(--gold))}
+.chip.on{background:var(--ac,var(--gold));border-color:var(--ac,var(--gold));color:#fff}
+
+/* NAV BUTTONS */
+.fnav{display:flex;justify-content:space-between;align-items:center;margin-top:44px;padding-top:24px;border-top:1px solid var(--line)}
+.btn-back{padding:11px 24px;border:1.5px solid var(--line);background:transparent;color:var(--grey);font-family:'Outfit',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:.2s}
+.btn-back:hover{border-color:var(--ac,var(--gold));color:var(--ac,var(--gold))}
+.btn-next{padding:13px 36px;background:var(--ac,var(--gold));color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:.2s;font-weight:600}
+.btn-next:hover{background:var(--ac-l,var(--gold-l))}
+.btn-send{padding:15px 48px;background:var(--ink);color:var(--paper);border:none;font-family:'Playfair Display',serif;font-size:17px;cursor:pointer;transition:.2s;letter-spacing:.4px}
+.btn-send:hover{background:var(--ac,var(--gold))}
+
+/* SUMMARY */
+.sum{display:none}.sum.on{display:block;animation:rise .4s ease}
+.sum-wrap{max-width:720px;margin:0 auto;padding:48px 44px 80px}
+.sum-h{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;margin-bottom:6px}
+.sum-h i{font-style:italic;color:var(--ac,var(--gold))}
+.sum-sub{font-size:13px;color:var(--grey);margin-bottom:32px}
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px}
+.sblock{background:#fff;border:1.5px solid var(--line);padding:18px}
+.sblock.wide{grid-column:1/-1}
+.slbl{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ac,var(--gold));margin-bottom:5px;font-weight:600}
+.sval{font-size:13.5px;color:var(--ink);line-height:1.55}
+.copy-box{background:var(--mist);border:1px solid var(--line);padding:20px;font-size:12px;line-height:1.9;white-space:pre-line;color:#444;max-height:260px;overflow-y:auto;font-family:'Outfit',sans-serif;margin-bottom:8px}
+.copy-note{font-size:11px;color:var(--grey);text-align:center;margin-bottom:20px}
+.act{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.abtn{padding:14px 20px;border:1.5px solid var(--line);background:#fff;cursor:pointer;font-family:'Outfit',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:500;transition:.2s;color:var(--ink)}
+.abtn:hover{border-color:var(--ac,var(--gold));color:var(--ac,var(--gold))}
+.abtn.prim{background:var(--ac,var(--gold));border-color:var(--ac,var(--gold));color:#fff}
+.abtn.prim:hover{background:var(--ac-l,var(--gold-l));border-color:var(--ac-l,var(--gold-l))}
+hr.sep{border:none;border-top:1px solid var(--line);margin:28px 0}
+
+/* EMAIL SECTION */
+.email-row{display:flex;align-items:flex-end;gap:12px;padding:14px 18px;background:#fff;border:1.5px solid var(--line);margin-bottom:0}
+.email-dest{flex:1}
+.email-dest-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:var(--grey);margin-bottom:4px}
+.email-dest-addr{font-size:13px;color:var(--ink)}
+.email-input-wrap{flex:1;display:flex;flex-direction:column;gap:4px}
+.email-inline{width:100%;padding:9px 12px;border:1.5px solid var(--line);background:var(--mist);font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:border-color .2s}
+.email-inline:focus{border-color:var(--ac,var(--gold))}
+.abtn.sent{background:var(--mist);color:var(--grey);border-color:var(--line);cursor:default}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 22px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-family:'Outfit',sans-serif;z-index:999;pointer-events:none;opacity:0;transition:opacity .25s;border-left:3px solid var(--gold-l)}
+.toast.show{opacity:1}
+
+@media(max-width:600px){
+  .frow,.opts.c2,.opts.c3,.sum-grid,.act{grid-template-columns:1fr}
+  .hero,.body,.sum-wrap{padding-left:20px;padding-right:20px}
+  .prog{padding-left:20px;padding-right:20px}
+  .hero-badge{display:none}
+  nav{padding:0 12px}
+  .tab{padding:0 10px;font-size:10px;letter-spacing:1px}
+  .copy-tab{display:none}
+}
+`;
+
+/* ─── Helpers ──────────────────────────────────────────────────────────────── */
+function useHash() {
+  const getH = () => {
+    const h = window.location.hash.slice(1);
+    return ['sh','yo','jc'].includes(h) ? h : 'all';
+  };
+  const [hash, setHash] = useState(getH);
+  useEffect(() => {
+    const fn = () => setHash(getH());
+    window.addEventListener('hashchange', fn);
+    return () => window.removeEventListener('hashchange', fn);
+  }, []);
+  return hash;
+}
+
+function copyText(text) {
+  try { navigator.clipboard.writeText(text); } catch(e) {
+    const el = document.createElement('textarea');
+    el.value = text; document.body.appendChild(el); el.select();
+    document.execCommand('copy'); document.body.removeChild(el);
+  }
+}
+
+function useFormState() {
+  const [data, setData] = useState({});
+  const set = (k,v) => setData(d => ({...d,[k]:v}));
+  const toggle = (k,v) => setData(d => {
+    const a = d[k]||[];
+    return {...d,[k]: a.includes(v) ? a.filter(x=>x!==v) : [...a,v]};
+  });
+  const get  = (k) => data[k]??'';
+  const getA = (k) => data[k]||[];
+  return { data, set, toggle, get, getA };
+}
+
+/* ─── Shared components ────────────────────────────────────────────────────── */
+function Lbl({ children, req }) {
+  return <div className="lbl">{children}{req && <span className="req"> *</span>}</div>;
+}
+
+function RadioGroup({ name, options, value, onChange, cols=2 }) {
+  return (
+    <div className={`opts c${cols}`}>
+      {options.map(o => (
+        <label key={o.v} className={`opt${value===o.v?' on':''}`} onClick={()=>onChange(o.v)}>
+          <div className="check"/>
+          <div><div className="ot">{o.l}</div>{o.d&&<div className="od">{o.d}</div>}</div>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function CheckGroup({ name, options, values, onChange, cols=2 }) {
+  return (
+    <div className={`opts c${cols}`}>
+      {options.map(o => {
+        const on = (values||[]).includes(o.v);
+        return (
+          <label key={o.v} className={`opt${on?' on':''}`} onClick={()=>onChange(o.v)}>
+            <div className="check"/>
+            <div><div className="ot">{o.l}</div>{o.d&&<div className="od">{o.d}</div>}</div>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function Chips({ options, value, onChange }) {
+  return (
+    <div className="chips">
+      {options.map(o => (
+        <div key={o.v} className={`chip${value===o.v?' on':''}`} onClick={()=>onChange(o.v)}>{o.l}</div>
+      ))}
+    </div>
+  );
+}
+
+function StepNav({ step, totalSteps, onBack, onNext, onSubmit }) {
+  return (
+    <div className="fnav">
+      {step > 0
+        ? <button className="btn-back" onClick={onBack}>← Retour</button>
+        : <div/>}
+      {step < totalSteps - 1
+        ? <button className="btn-next" onClick={onNext}>Suivant →</button>
+        : <button className="btn-send" onClick={onSubmit}>Envoyer la demande ✓</button>}
+    </div>
+  );
+}
+
+/* ─── Toast ────────────────────────────────────────────────────────────────── */
+function Toast({ msg }) {
+  return <div className={`toast${msg?' show':''}`}>{msg}</div>;
+}
+
+/* ─── EmailJS config ─────────────────────────────────────────────────────── */
+const EJS = {
+  serviceId:  'service_6h6ahfb',
+  templateId: 'template_qu82anc',
+  publicKey:  'xYIi71jDeSD4eNyjb',
+};
+const MANAGER_EMAIL = 'macassandra.toure@gmail.com';
+
+async function sendEmail({ subject, message, name, email }) {
+  const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service_id:  EJS.serviceId,
+      template_id: EJS.templateId,
+      user_id:     EJS.publicKey,
+      template_params: {
+        subject,
+        message,
+        name:  name  || 'Client',
+        email: email || '',
+      }
+    })
+  });
+  if (!res.ok) throw new Error(`EmailJS error ${res.status}`);
+}
+
+function openMailto(to, subject, body) {
+  window.open(`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+}
+
+/* ─── Shared Summary ─────────────────────────────────────────────────────── */
+function Summary({ talentLabel, prio, fields, txt, emailSubject, clientEmail, clientName, onReset }) {
+  const [copyDone, setCopyDone] = useState(false);
+  const [mgrState, setMgrState] = useState('idle'); // idle | sending | done | error
+  const [cliState, setCliState] = useState('idle');
+  const [copyEmail, setCopyEmail] = useState(clientEmail || '');
+
+  const handleSendManager = async () => {
+    setMgrState('sending');
+    try {
+      await sendEmail({ subject: emailSubject, message: txt, name: clientName, email: clientEmail });
+      setMgrState('done');
+    } catch(e) {
+      console.error(e);
+      setMgrState('error');
+      setTimeout(() => setMgrState('idle'), 4000);
+    }
+  };
+
+  const handleSendClient = async () => {
+    if (!copyEmail) return;
+    setCliState('sending');
+    try {
+      await sendEmail({
+        subject: `Votre demande — ${emailSubject}`,
+        message: txt,
+        name: clientName,
+        email: copyEmail,
+      });
+      // EmailJS template sends to manager; for client copy we use mailto
+      openMailto(copyEmail, `Votre demande — ${emailSubject}`, txt);
+      setCliState('done');
+    } catch(e) {
+      // fallback to mailto anyway
+      openMailto(copyEmail, `Votre demande — ${emailSubject}`, txt);
+      setCliState('done');
+    }
+  };
+
+  const mgrLabel = {idle:'✉️ Envoyer au manager', sending:'⏳ Envoi…', done:'✓ Envoyé !', error:'⚠️ Erreur — réessayer'}[mgrState];
+  const cliLabel = {idle:'📧 Copie client', sending:'⏳ Envoi…', done:'✓ Envoyé !', error:'⚠️ Erreur'}[cliState];
+
+  return (
+    <div className="sum on">
+      <div className="sum-wrap">
+        <div className="step-tag">Demande reçue</div>
+        <div className="sum-h">Récapitulatif — <i>{talentLabel}</i></div>
+        <div className="sum-sub">La demande est prête. Envoyez-la au manager et/ou offrez une copie au client.</div>
+
+        <div className="sum-grid">
+          {fields.filter(f => prio.includes(f.l) && f.v).map(f => (
+            <div key={f.l} className="sblock"><div className="slbl">{f.l}</div><div className="sval">{f.v}</div></div>
+          ))}
+          {fields.filter(f => f.w && f.v).map(f => (
+            <div key={f.l} className="sblock wide"><div className="slbl">{f.l}</div><div className="sval">{f.v}</div></div>
+          ))}
+        </div>
+
+        <hr className="sep"/>
+        <div className="slbl" style={{marginBottom:14}}>📤 Envoyer par email</div>
+
+        {/* Manager — EmailJS automatique */}
+        <div className="email-row">
+          <div className="email-dest">
+            <div className="email-dest-label">Manager · Talents CI</div>
+            <div className="email-dest-addr">{MANAGER_EMAIL}</div>
+          </div>
+          <button
+            className={`abtn prim${mgrState==='done'?' sent':''}`}
+            disabled={mgrState==='sending'||mgrState==='done'}
+            style={{opacity: mgrState==='done'?.6:1}}
+            onClick={handleSendManager}>
+            {mgrLabel}
+          </button>
+        </div>
+
+        {/* Client — copie par mailto */}
+        <div className="email-row" style={{marginTop:10}}>
+          <div className="email-input-wrap">
+            <div className="email-dest-label">Copie au client (optionnel)</div>
+            <input
+              type="email"
+              className="email-inline"
+              placeholder="email.du@client.com"
+              value={copyEmail}
+              onChange={e => setCopyEmail(e.target.value)}
+            />
+          </div>
+          <button
+            className={`abtn${cliState==='done'?' sent':''}`}
+            style={{opacity: copyEmail&&cliState!=='done' ? 1 : .4, cursor: copyEmail ? 'pointer':'default'}}
+            disabled={!copyEmail||cliState==='sending'||cliState==='done'}
+            onClick={handleSendClient}>
+            {cliLabel}
+          </button>
+        </div>
+
+        <hr className="sep"/>
+        <div className="slbl" style={{marginBottom:10}}>📋 Texte brut</div>
+        <div className="copy-box">{txt}</div>
+        <p className="copy-note">Copie ce texte pour l'envoyer manuellement par WhatsApp.</p>
+
+        <div className="act">
+          <button className="abtn" onClick={() => { copyText(txt); setCopyDone(true); setTimeout(() => setCopyDone(false), 2500); }}>
+            {copyDone ? '✓ Copié !' : '📋 Copier le récapitulatif'}
+          </button>
+          <button className="abtn prim" onClick={onReset}>Nouvelle demande</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIR HEAL FORM
+═══════════════════════════════════════════════════════════════════════════ */
+function SirHealForm({ onReset }) {
+  const [step, setStep] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const { get, getA, set, toggle } = useFormState();
+
+  const STEPS = ['01 — Vous','02 — Votre projet','03 — Budget & Timing'];
+
+  const buildSummary = () => {
+    const fields = [
+      { l:'Nom & Prénom', v:get('nom'), w:false },
+      { l:'Entreprise', v:get('ent'), w:false },
+      { l:'Email', v:get('email'), w:false },
+      { l:'Téléphone', v:get('tel'), w:false },
+      { l:'Profil client', v:get('qui'), w:false },
+      { l:'Prestation souhaitée', v:get('presta'), w:false },
+      { l:'Description du projet', v:get('desc'), w:true },
+      { l:'Format / Durée', v:get('format'), w:false },
+      { l:'Support de diffusion', v:get('support'), w:false },
+      { l:'Références musicales', v:get('refs'), w:false },
+      { l:'Budget envisagé', v:get('budget'), w:false },
+      { l:'Urgence', v:get('urgence'), w:false },
+      { l:'Date de livraison', v:get('date'), w:false },
+      { l:'Mode de suivi', v:get('suivi'), w:false },
+      { l:"Droits d'utilisation", v:get('droits'), w:false },
+      { l:'Informations complémentaires', v:get('plus'), w:true },
+    ];
+    return fields;
+  };
+
+  const handleSubmit = () => {
+    setSubmitted(true);
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+
+  if (submitted) {
+    const allFields = buildSummary();
+    const date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+    let txt = `══════════════════════════════════════\nDEMANDE CLIENT — Sir Heal — Compositeur & Sound Designer\nDate : ${date}\n══════════════════════════════════════\n\n`;
+    allFields.filter(f=>f.v).forEach(f => { txt += `${f.l.toUpperCase()}\n→ ${f.v}\n\n`; });
+    txt += `──────────────────────────────────────\nTransmis via le formulaire Talents CI`;
+    return <Summary
+      talentLabel="Sir Heal"
+      prio={['Profil client','Prestation souhaitée','Budget envisagé','Urgence','Mode de suivi']}
+      fields={allFields}
+      txt={txt}
+      emailSubject="Demande client — Sir Heal · Compositeur & Sound Designer"
+      clientEmail={get('email')}
+      clientName={get('nom')}
+      onReset={onReset}
+    />;
+  }
+
+  return (
+    <>
+      <div className="prog">
+        <div className="bars">{STEPS.map((_,i)=><div key={i} className={`bar${i<step?' done':i===step?' now':''}`}/>)}</div>
+        <div className="prog-lbl">Étape {step+1} / {STEPS.length}</div>
+      </div>
+      <div className="body">
+        {/* Step 0 */}
+        <div className={`step${step===0?' on':''}`}>
+          <div className="step-tag">01 — Vous</div>
+          <div className="step-h">Qui êtes-vous ?</div>
+          <div className="step-hint">Informations strictement confidentielles.</div>
+          <div className="fields">
+            <div className="frow">
+              <div className="field"><Lbl req>Nom & Prénom</Lbl><input type="text" value={get('nom')} onChange={e=>set('nom',e.target.value)} placeholder="Jean-Paul Assi"/></div>
+              <div className="field"><Lbl>Entreprise / Structure</Lbl><input type="text" value={get('ent')} onChange={e=>set('ent',e.target.value)} placeholder="Agence Alpha, Studio X..."/></div>
+            </div>
+            <div className="frow">
+              <div className="field"><Lbl req>Email</Lbl><input type="email" value={get('email')} onChange={e=>set('email',e.target.value)} placeholder="vous@exemple.com"/></div>
+              <div className="field"><Lbl>Téléphone WhatsApp</Lbl><input type="tel" value={get('tel')} onChange={e=>set('tel',e.target.value)} placeholder="+225 07 00 00 00 00"/></div>
+            </div>
+            <div className="field">
+              <Lbl req>Vous êtes</Lbl>
+              <RadioGroup name="qui" cols={3} value={get('qui')} onChange={v=>set('qui',v)} options={[
+                {v:'Agence de communication',l:'Agence pub / comm'},
+                {v:'Producteur / Réalisateur',l:'Producteur / Réal.'},
+                {v:'Marque / Entreprise',l:'Marque / Entreprise'},
+                {v:'Créateur de contenu',l:'Créateur de contenu'},
+                {v:'Institution / ONG',l:'Institution / ONG'},
+                {v:'Particulier',l:'Particulier'},
+              ]}/>
+            </div>
+          </div>
+          <StepNav step={0} totalSteps={3} onNext={()=>setStep(1)}/>
+        </div>
+
+        {/* Step 1 */}
+        <div className={`step${step===1?' on':''}`}>
+          <div className="step-tag">02 — Votre projet</div>
+          <div className="step-h">Décrivez votre besoin sonore</div>
+          <div className="step-hint">Plus vous êtes précis, meilleur sera notre devis.</div>
+          <div className="fields">
+            <div className="field">
+              <Lbl req>Type de prestation</Lbl>
+              <RadioGroup name="presta" cols={2} value={get('presta')} onChange={v=>set('presta',v)} options={[
+                {v:'Jingle publicitaire',l:'Jingle publicitaire',d:'TV, radio, digital (15s–60s)'},
+                {v:'Identité sonore de marque',l:'Identité sonore de marque',d:'Logo sonore, univers complet'},
+                {v:'Scoring film / web-série',l:'Scoring audiovisuel',d:'Film, doc, web-série'},
+                {v:'Sound design événementiel',l:'Sound design événement',d:'Gala, conf, lancement'},
+                {v:'Habillage podcast / émission',l:'Podcast / Émission',d:'Générique, transitions'},
+                {v:'Autre / À définir',l:'Autre / À définir'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl req>Décrivez votre projet</Lbl>
+              <div className="hint">Contexte, ambiance souhaitée, message à transmettre, références musicales</div>
+              <textarea rows={5} value={get('desc')} onChange={e=>set('desc',e.target.value)} placeholder="Ex : Jingle 30s pour campagne TV d'une banque ivoirienne. Ton : professionnel, chaleureux, moderne…"/>
+            </div>
+            <div className="frow">
+              <div className="field">
+                <Lbl>Format / Durée attendue</Lbl>
+                <select value={get('format')} onChange={e=>set('format',e.target.value)}>
+                  <option value="">— Sélectionner —</option>
+                  <option>15 secondes</option><option>30 secondes</option><option>60 secondes</option>
+                  <option>2 – 5 minutes</option><option>Long format (film complet)</option>
+                  <option>Plusieurs déclinaisons</option><option>À définir ensemble</option>
+                </select>
+              </div>
+              <div className="field">
+                <Lbl>Support de diffusion</Lbl>
+                <select value={get('support')} onChange={e=>set('support',e.target.value)}>
+                  <option value="">— Sélectionner —</option>
+                  <option>TV nationale (RTI…)</option><option>Radio</option>
+                  <option>Digital / Réseaux sociaux</option><option>Cinéma / Projection</option>
+                  <option>Événement en direct</option><option>Podcast / YouTube</option><option>Tous supports</option>
+                </select>
+              </div>
+            </div>
+            <div className="field"><Lbl>Références musicales</Lbl><input type="text" value={get('refs')} onChange={e=>set('refs',e.target.value)} placeholder="Ex : Burna Boy, Soolking, ambiance cinématique africaine…"/></div>
+          </div>
+          <StepNav step={1} totalSteps={3} onBack={()=>setStep(0)} onNext={()=>setStep(2)}/>
+        </div>
+
+        {/* Step 2 */}
+        <div className={`step${step===2?' on':''}`}>
+          <div className="step-tag">03 — Budget & Timing</div>
+          <div className="step-h">Cadrons le projet</div>
+          <div className="step-hint">Ces informations restent confidentielles.</div>
+          <div className="fields">
+            <div className="field">
+              <Lbl>Budget envisagé</Lbl>
+              <RadioGroup name="budget" cols={2} value={get('budget')} onChange={v=>set('budget',v)} options={[
+                {v:'Moins de 200 000 FCFA',l:'Moins de 200 000 FCFA'},
+                {v:'200 000 – 500 000 FCFA',l:'200 000 – 500 000 FCFA'},
+                {v:'500 000 – 1 500 000 FCFA',l:'500K – 1 500 000 FCFA'},
+                {v:'Plus de 1 500 000 FCFA',l:'Plus de 1 500 000 FCFA'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl req>Urgence</Lbl>
+              <Chips value={get('urgence')} onChange={v=>set('urgence',v)} options={[
+                {v:'Urgent — moins de 7 jours',l:'🔴 Moins de 7 jours'},
+                {v:'7 à 15 jours',l:'🟡 7 – 15 jours'},
+                {v:'15 à 30 jours',l:'🟢 15 – 30 jours'},
+                {v:"Pas pressé — plus d'1 mois",l:'⚪ + 1 mois'},
+              ]}/>
+            </div>
+            <div className="frow">
+              <div className="field"><Lbl>Date de livraison souhaitée</Lbl><input type="date" value={get('date')} onChange={e=>set('date',e.target.value)}/></div>
+              <div className="field">
+                <Lbl>Comment vous recontacter ?</Lbl>
+                <select value={get('suivi')} onChange={e=>set('suivi',e.target.value)}>
+                  <option value="">— Sélectionner —</option>
+                  <option>Appel découverte 20 min</option><option>Recevoir directement un devis</option>
+                  <option>Échange WhatsApp</option><option>Réunion présentiel Abidjan</option>
+                </select>
+              </div>
+            </div>
+            <div className="field">
+              <Lbl>Droits d'utilisation</Lbl>
+              <RadioGroup name="droits" cols={2} value={get('droits')} onChange={v=>set('droits',v)} options={[
+                {v:"Côte d'Ivoire uniquement",l:'Nationale CI',d:'Diffusion en Côte d\'Ivoire'},
+                {v:'Panafricaine',l:'Panafricaine',d:'Plusieurs pays africains'},
+                {v:'Mondiale (tous droits)',l:'Mondiale',d:'Sans restriction géo'},
+                {v:'À définir ensemble',l:'À définir'},
+              ]}/>
+            </div>
+            <div className="field"><Lbl>Informations complémentaires</Lbl><textarea rows={3} value={get('plus')} onChange={e=>set('plus',e.target.value)} placeholder="Contraintes techniques, charte existante, interlocuteurs impliqués…"/></div>
+          </div>
+          <StepNav step={2} totalSteps={3} onBack={()=>setStep(1)} onSubmit={handleSubmit}/>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHEF YOHOU FORM
+═══════════════════════════════════════════════════════════════════════════ */
+function ChefYohouForm({ onReset }) {
+  const [step, setStep] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const { get, getA, set, toggle } = useFormState();
+
+  const STEPS = ['01 — Vous','02 — L\'événement','03 — Budget & Logistique'];
+
+  const buildSummary = () => [
+    { l:'Nom & Prénom', v:get('nom'), w:false },
+    { l:'Entreprise', v:get('ent'), w:false },
+    { l:'Email', v:get('email'), w:false },
+    { l:'Téléphone', v:get('tel'), w:false },
+    { l:"Type d'événement", v:get('type'), w:false },
+    { l:"Date de l'événement", v:get('date'), w:false },
+    { l:'Lieu / Ville', v:get('lieu'), w:false },
+    { l:'Nombre de personnes', v:get('nb'), w:false },
+    { l:'Type de service', v:get('svc'), w:false },
+    { l:'Préférences culinaires', v:getA('cuis').join(', '), w:false },
+    { l:'Allergies / Contraintes', v:get('allerg'), w:false },
+    { l:'Ambiance souhaitée', v:get('desc'), w:true },
+    { l:'Budget total', v:get('budget'), w:false },
+    { l:'Cuisine sur place', v:get('cuisineloc'), w:false },
+    { l:'Personnel de service', v:get('perso'), w:false },
+    { l:'Mode de suivi', v:get('suivi'), w:false },
+    { l:'Précisions supplémentaires', v:get('plus'), w:true },
+  ];
+
+  const handleSubmit = () => { setSubmitted(true); window.scrollTo({top:0,behavior:'smooth'}); };
+
+  if (submitted) {
+    const allFields = buildSummary();
+    const date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+    let txt = `══════════════════════════════════════\nDEMANDE CLIENT — Chef Yohou — Cheffe culinaire Afro-Fusion\nDate : ${date}\n══════════════════════════════════════\n\n`;
+    allFields.filter(f=>f.v).forEach(f => { txt += `${f.l.toUpperCase()}\n→ ${f.v}\n\n`; });
+    txt += `──────────────────────────────────────\nTransmis via le formulaire Talents CI`;
+    return <Summary
+      talentLabel="Chef Yohou"
+      prio={["Type d'\u00e9v\u00e9nement","Date de l'\u00e9v\u00e9nement",'Nombre de personnes','Budget total','Mode de suivi']}
+      fields={allFields}
+      txt={txt}
+      emailSubject="Demande client — Chef Yohou · Cheffe culinaire Afro-Fusion"
+      clientEmail={get('email')}
+      clientName={get('nom')}
+      onReset={onReset}
+    />;
+  }
+
+  return (
+    <>
+      <div className="prog">
+        <div className="bars">{STEPS.map((_,i)=><div key={i} className={`bar${i<step?' done':i===step?' now':''}`}/>)}</div>
+        <div className="prog-lbl">Étape {step+1} / {STEPS.length}</div>
+      </div>
+      <div className="body">
+        {/* Step 0 */}
+        <div className={`step${step===0?' on':''}`}>
+          <div className="step-tag">01 — Vous</div>
+          <div className="step-h">Présentez-vous</div>
+          <div className="step-hint">Toutes les informations restent confidentielles.</div>
+          <div className="fields">
+            <div className="frow">
+              <div className="field"><Lbl req>Nom & Prénom</Lbl><input type="text" value={get('nom')} onChange={e=>set('nom',e.target.value)} placeholder="Sophie Gnangnan"/></div>
+              <div className="field"><Lbl>Entreprise / Structure</Lbl><input type="text" value={get('ent')} onChange={e=>set('ent',e.target.value)} placeholder="Groupe XYZ, Mariage privé…"/></div>
+            </div>
+            <div className="frow">
+              <div className="field"><Lbl req>Email</Lbl><input type="email" value={get('email')} onChange={e=>set('email',e.target.value)} placeholder="vous@exemple.com"/></div>
+              <div className="field"><Lbl>Téléphone WhatsApp</Lbl><input type="tel" value={get('tel')} onChange={e=>set('tel',e.target.value)} placeholder="+225 07 00 00 00 00"/></div>
+            </div>
+            <div className="field">
+              <Lbl req>Vous organisez</Lbl>
+              <RadioGroup name="type" cols={3} value={get('type')} onChange={v=>set('type',v)} options={[
+                {v:'Mariage / Cérémonie',l:'Mariage / Cérémonie'},
+                {v:'Événement corporate',l:'Corporate / Entreprise'},
+                {v:'Dîner privé exclusif',l:'Dîner privé'},
+                {v:'Atelier / Team-building',l:'Atelier / Team-building'},
+                {v:'Pop-up gastronomique',l:'Pop-up gastronomique'},
+                {v:'Box repas / Traiteur régulier',l:'Box repas / Régulier'},
+              ]}/>
+            </div>
+          </div>
+          <StepNav step={0} totalSteps={3} onNext={()=>setStep(1)}/>
+        </div>
+
+        {/* Step 1 */}
+        <div className={`step${step===1?' on':''}`}>
+          <div className="step-tag">02 — L'événement</div>
+          <div className="step-h">Dites-nous tout</div>
+          <div className="step-hint">Plus vous êtes précis, plus la proposition sera adaptée.</div>
+          <div className="fields">
+            <div className="frow">
+              <div className="field"><Lbl req>Date de l'événement</Lbl><input type="date" value={get('date')} onChange={e=>set('date',e.target.value)}/></div>
+              <div className="field"><Lbl>Lieu / Ville</Lbl><input type="text" value={get('lieu')} onChange={e=>set('lieu',e.target.value)} placeholder="Abidjan, Cocody — salle des fêtes…"/></div>
+            </div>
+            <div className="field">
+              <Lbl req>Nombre de personnes</Lbl>
+              <RadioGroup name="nb" cols={3} value={get('nb')} onChange={v=>set('nb',v)} options={[
+                {v:'Moins de 20 personnes',l:'Moins de 20'},
+                {v:'20 – 50 personnes',l:'20 – 50 pers.'},
+                {v:'50 – 100 personnes',l:'50 – 100 pers.'},
+                {v:'100 – 150 personnes',l:'100 – 150 pers.'},
+                {v:'Plus de 150 personnes',l:'+ 150 pers.'},
+                {v:'À définir',l:'À définir'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl req>Type de service</Lbl>
+              <RadioGroup name="svc" cols={2} value={get('svc')} onChange={v=>set('svc',v)} options={[
+                {v:'Cocktail / Buffet debout',l:'Cocktail / Buffet debout'},
+                {v:'Dîner assis à table',l:'Dîner assis à table'},
+                {v:'Menu dégustation plusieurs services',l:'Menu dégustation',d:'Plusieurs services'},
+                {v:'Brunch / Déjeuner',l:'Brunch / Déjeuner'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl>Préférences culinaires (plusieurs choix possibles)</Lbl>
+              <CheckGroup name="cuis" cols={2} values={getA('cuis')} onChange={v=>toggle('cuis',v)} options={[
+                {v:'Cuisine ivoirienne moderne',l:'Cuisine ivoirienne moderne'},
+                {v:'Afro-Fusion (CI + français)',l:'Afro-Fusion',d:'CI + influences françaises'},
+                {v:'Cuisine internationale',l:'Cuisine internationale'},
+                {v:'Végétarien / Régimes spéciaux',l:'Végétarien / Allergies',d:'Préciser ci-dessous'},
+              ]}/>
+            </div>
+            <div className="field"><Lbl>Allergies / Contraintes alimentaires</Lbl><input type="text" value={get('allerg')} onChange={e=>set('allerg',e.target.value)} placeholder="Sans gluten, halal, végétarien, noix, lactose…"/></div>
+            <div className="field">
+              <Lbl>Ambiance & expérience souhaitées</Lbl>
+              <div className="hint">Décrivez l'atmosphère, le niveau de formalité, les attentes particulières</div>
+              <textarea rows={4} value={get('desc')} onChange={e=>set('desc',e.target.value)} placeholder="Ex : Mariage élégant de 80 personnes, ambiance ivoirienne raffinée. Menu 4 services avec touche moderne…"/>
+            </div>
+          </div>
+          <StepNav step={1} totalSteps={3} onBack={()=>setStep(0)} onNext={()=>setStep(2)}/>
+        </div>
+
+        {/* Step 2 */}
+        <div className={`step${step===2?' on':''}`}>
+          <div className="step-tag">03 — Budget & Logistique</div>
+          <div className="step-h">Les derniers détails</div>
+          <div className="step-hint">Ces informations nous permettent d'adapter notre proposition.</div>
+          <div className="fields">
+            <div className="field">
+              <Lbl>Budget total envisagé (hors courses)</Lbl>
+              <RadioGroup name="budget" cols={2} value={get('budget')} onChange={v=>set('budget',v)} options={[
+                {v:'Moins de 300 000 FCFA',l:'Moins de 300 000 FCFA'},
+                {v:'300 000 – 800 000 FCFA',l:'300K – 800 000 FCFA'},
+                {v:'800 000 – 2 000 000 FCFA',l:'800K – 2 000 000 FCFA'},
+                {v:'Plus de 2 000 000 FCFA',l:'Plus de 2 000 000 FCFA'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl>Cuisine disponible sur place ?</Lbl>
+              <RadioGroup name="cuisineloc" cols={3} value={get('cuisineloc')} onChange={v=>set('cuisineloc',v)} options={[
+                {v:'Oui, cuisine disponible sur place',l:'Oui — sur place'},
+                {v:'Non, livraison de plats préparés',l:'Non — livraison'},
+                {v:'À organiser',l:'À organiser'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl>Personnel de service nécessaire ?</Lbl>
+              <RadioGroup name="perso" cols={3} value={get('perso')} onChange={v=>set('perso',v)} options={[
+                {v:'Oui, inclure dans le devis',l:'Oui — inclure'},
+                {v:'Non, personnel déjà prévu',l:'Non — déjà prévu'},
+                {v:'À discuter',l:'À discuter'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl>Comment vous recontacter ?</Lbl>
+              <Chips value={get('suivi')} onChange={v=>set('suivi',v)} options={[
+                {v:'Appel téléphonique',l:'📞 Appel'},
+                {v:'WhatsApp',l:'💬 WhatsApp'},
+                {v:'Email avec devis',l:'📧 Email + devis'},
+                {v:'Rencontre présentiel Abidjan',l:'🤝 Présentiel'},
+              ]}/>
+            </div>
+            <div className="field"><Lbl>Questions ou précisions supplémentaires</Lbl><textarea rows={3} value={get('plus')} onChange={e=>set('plus',e.target.value)} placeholder="Thème / couleurs, décoration de table, prestataires déjà engagés…"/></div>
+          </div>
+          <StepNav step={2} totalSteps={3} onBack={()=>setStep(1)} onSubmit={handleSubmit}/>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   JCN DEV FORM
+═══════════════════════════════════════════════════════════════════════════ */
+function JCNDevForm({ onReset }) {
+  const [step, setStep] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const { get, getA, set, toggle } = useFormState();
+
+  const STEPS = ['01 — Vous','02 — Le projet','03 — Budget & Délais'];
+
+  const buildSummary = () => [
+    { l:'Nom & Prénom', v:get('nom'), w:false },
+    { l:'Entreprise', v:get('ent'), w:false },
+    { l:'Email', v:get('email'), w:false },
+    { l:'Téléphone', v:get('tel'), w:false },
+    { l:"Secteur d'activité", v:get('secteur'), w:false },
+    { l:'Localisation', v:get('loc'), w:false },
+    { l:'Existant', v:getA('exist').join(', '), w:false },
+    { l:'Type de solution', v:get('type'), w:false },
+    { l:'Description du projet', v:get('desc'), w:true },
+    { l:'Fonctionnalités souhaitées', v:getA('fonc').join(', '), w:true },
+    { l:'Design existant', v:get('design'), w:false },
+    { l:'Budget estimé', v:get('budget'), w:false },
+    { l:'Délai souhaité', v:get('delai'), w:false },
+    { l:'Maintenance', v:get('maint'), w:false },
+    { l:'Source de données (BI)', v:get('data'), w:false },
+    { l:'Mode de suivi', v:get('suivi'), w:false },
+    { l:'Références sites', v:get('refs'), w:false },
+    { l:'Informations complémentaires', v:get('plus'), w:true },
+  ];
+
+  const handleSubmit = () => { setSubmitted(true); window.scrollTo({top:0,behavior:'smooth'}); };
+
+  if (submitted) {
+    const allFields = buildSummary();
+    const date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+    let txt = `══════════════════════════════════════\nDEMANDE CLIENT — JCN Dev — Développeur Web & Data\nDate : ${date}\n══════════════════════════════════════\n\n`;
+    allFields.filter(f=>f.v).forEach(f => { txt += `${f.l.toUpperCase()}\n→ ${f.v}\n\n`; });
+    txt += `──────────────────────────────────────\nTransmis via le formulaire Talents CI`;
+    return <Summary
+      talentLabel="JCN Dev"
+      prio={['Type de solution','Budget estimé','Délai souhaité','Maintenance','Mode de suivi']}
+      fields={allFields}
+      txt={txt}
+      emailSubject="Demande client — JCN Dev · Développeur Web & Data"
+      clientEmail={get('email')}
+      clientName={get('nom')}
+      onReset={onReset}
+    />;
+  }
+
+  return (
+    <>
+      <div className="prog">
+        <div className="bars">{STEPS.map((_,i)=><div key={i} className={`bar${i<step?' done':i===step?' now':''}`}/>)}</div>
+        <div className="prog-lbl">Étape {step+1} / {STEPS.length}</div>
+      </div>
+      <div className="body">
+        {/* Step 0 */}
+        <div className={`step${step===0?' on':''}`}>
+          <div className="step-tag">01 — Vous</div>
+          <div className="step-h">Présentez votre structure</div>
+          <div className="step-hint">Ces informations resteront strictement confidentielles.</div>
+          <div className="fields">
+            <div className="frow">
+              <div className="field"><Lbl req>Nom & Prénom</Lbl><input type="text" value={get('nom')} onChange={e=>set('nom',e.target.value)} placeholder="Kouamé Yao"/></div>
+              <div className="field"><Lbl>Entreprise / Structure</Lbl><input type="text" value={get('ent')} onChange={e=>set('ent',e.target.value)} placeholder="Clinique Alpha, Boutique Beta…"/></div>
+            </div>
+            <div className="frow">
+              <div className="field"><Lbl req>Email</Lbl><input type="email" value={get('email')} onChange={e=>set('email',e.target.value)} placeholder="vous@exemple.com"/></div>
+              <div className="field"><Lbl>Téléphone / WhatsApp</Lbl><input type="tel" value={get('tel')} onChange={e=>set('tel',e.target.value)} placeholder="+225 07 00 00 00 00"/></div>
+            </div>
+            <div className="frow">
+              <div className="field">
+                <Lbl>Secteur d'activité</Lbl>
+                <select value={get('secteur')} onChange={e=>set('secteur',e.target.value)}>
+                  <option value="">— Sélectionner —</option>
+                  <option>Commerce / E-commerce</option><option>Santé / Clinique</option>
+                  <option>Restauration / Hôtellerie</option><option>Finance / Fintech</option>
+                  <option>Éducation / Formation</option><option>Immobilier</option>
+                  <option>Transport / Logistique</option><option>Services professionnels</option>
+                  <option>ONG / Association</option><option>Autre</option>
+                </select>
+              </div>
+              <div className="field">
+                <Lbl>Localisation</Lbl>
+                <select value={get('loc')} onChange={e=>set('loc',e.target.value)}>
+                  <option value="">— Sélectionner —</option>
+                  <option>Abidjan, Côte d'Ivoire</option><option>Autre ville CI</option>
+                  <option>Autre pays Afrique</option><option>France</option>
+                  <option>Autre Europe</option><option>Autre</option>
+                </select>
+              </div>
+            </div>
+            <div className="field">
+              <Lbl>Vous avez actuellement (plusieurs choix possibles)</Lbl>
+              <CheckGroup name="exist" cols={2} values={getA('exist')} onChange={v=>toggle('exist',v)} options={[
+                {v:'Un site web existant',l:'Un site web existant'},
+                {v:'Une application mobile',l:'Une application mobile'},
+                {v:'Des données Excel / base SQL',l:'Données Excel / SQL'},
+                {v:'Rien pour l\'instant — démarrage de zéro',l:'Rien — démarrage de zéro'},
+              ]}/>
+            </div>
+          </div>
+          <StepNav step={0} totalSteps={3} onNext={()=>setStep(1)}/>
+        </div>
+
+        {/* Step 1 */}
+        <div className={`step${step===1?' on':''}`}>
+          <div className="step-tag">02 — Le projet</div>
+          <div className="step-h">Décrivez votre besoin digital</div>
+          <div className="step-hint">Soyez aussi précis que possible — cela nous permet d'éviter des allers-retours.</div>
+          <div className="fields">
+            <div className="field">
+              <Lbl req>Type de solution souhaitée</Lbl>
+              <RadioGroup name="type" cols={2} value={get('type')} onChange={v=>set('type',v)} options={[
+                {v:'Site web vitrine (sans base de données)',l:'Site vitrine',d:'Présentation, contact, 5–10 pages'},
+                {v:'Site web avec base de données',l:'Site avec base de données',d:'Espace client, gestion, commandes'},
+                {v:'Chatbot sur site web',l:'Chatbot site web',d:'FAQ, RDV, support automatique'},
+                {v:'Chatbot WhatsApp',l:'Chatbot WhatsApp',d:'Commandes, réponses auto, marketing'},
+                {v:'Dashboard Power BI (visualisation de données)',l:'Dashboard Power BI',d:'Visualisation interactive de vos données'},
+                {v:'Combinaison de plusieurs solutions',l:'Plusieurs solutions',d:'Je détaille ci-dessous'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl req>Décrivez votre projet</Lbl>
+              <div className="hint">Quel problème à résoudre ? Qui utilisera la solution ? Fonctionnalités essentielles ?</div>
+              <textarea rows={5} value={get('desc')} onChange={e=>set('desc',e.target.value)} placeholder="Ex : Je gère une clinique à Cocody. Je veux un site avec prise de RDV en ligne, une page par médecin et un tableau de bord…"/>
+            </div>
+            <div className="field">
+              <Lbl>Fonctionnalités spécifiques souhaitées</Lbl>
+              <CheckGroup name="fonc" cols={2} values={getA('fonc')} onChange={v=>toggle('fonc',v)} options={[
+                {v:'Paiement mobile money (MTN / Orange CI)',l:'Paiement mobile money',d:'MTN / Orange CI'},
+                {v:'Réservation / RDV en ligne',l:'Réservation / RDV en ligne'},
+                {v:'Espace admin / tableau de bord interne',l:'Espace admin / Dashboard'},
+                {v:'Authentification utilisateurs (login/password)',l:'Authentification utilisateurs'},
+                {v:'Chat en direct (live chat)',l:'Chat en direct'},
+                {v:'Multilingue (français + anglais)',l:'Multilingue FR / EN'},
+                {v:'Catalogue produits / E-commerce',l:'Catalogue / E-commerce'},
+                {v:'Notifications SMS / Email automatiques',l:'Notifications auto',d:'SMS / Email'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl>Avez-vous un design / charte graphique ?</Lbl>
+              <RadioGroup name="design" cols={3} value={get('design')} onChange={v=>set('design',v)} options={[
+                {v:'Oui — logo + charte couleurs',l:'Oui, logo + charte'},
+                {v:'Logo seulement',l:'Logo seulement'},
+                {v:'Non — tout est à créer',l:'Non — tout à créer'},
+              ]}/>
+            </div>
+            <div className="field"><Lbl>Sites / applis de référence que vous aimez</Lbl><input type="text" value={get('refs')} onChange={e=>set('refs',e.target.value)} placeholder="URLs ou noms de sites de référence pour le design…"/></div>
+          </div>
+          <StepNav step={1} totalSteps={3} onBack={()=>setStep(0)} onNext={()=>setStep(2)}/>
+        </div>
+
+        {/* Step 2 */}
+        <div className={`step${step===2?' on':''}`}>
+          <div className="step-tag">03 — Budget & Délais</div>
+          <div className="step-h">Cadrons votre projet</div>
+          <div className="step-hint">Ces informations nous permettent de calibrer notre proposition.</div>
+          <div className="fields">
+            <div className="field">
+              <Lbl>Budget estimé</Lbl>
+              <RadioGroup name="budget" cols={2} value={get('budget')} onChange={v=>set('budget',v)} options={[
+                {v:'Moins de 200 000 FCFA',l:'Moins de 200 000 FCFA',d:'Site vitrine simple'},
+                {v:'200 000 – 500 000 FCFA',l:'200K – 500 000 FCFA',d:'Site + fonctionnalités'},
+                {v:'500 000 – 1 500 000 FCFA',l:'500K – 1 500 000 FCFA',d:'Application complète'},
+                {v:'Plus de 1 500 000 FCFA',l:'Plus de 1 500 000 FCFA',d:'Projet ambitieux'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl req>Délai souhaité</Lbl>
+              <Chips value={get('delai')} onChange={v=>set('delai',v)} options={[
+                {v:'Urgent — moins de 2 semaines',l:'⚡ - de 2 semaines'},
+                {v:'2 à 4 semaines',l:'🟡 2 – 4 semaines'},
+                {v:'1 à 2 mois',l:'🟢 1 – 2 mois'},
+                {v:'Plus de 2 mois',l:'⚪ + 2 mois'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl>Maintenance après livraison ?</Lbl>
+              <RadioGroup name="maint" cols={3} value={get('maint')} onChange={v=>set('maint',v)} options={[
+                {v:'Oui — maintenance mensuelle souhaitée',l:'Oui, mensuelle'},
+                {v:'Non — livraison seule suffit',l:'Non — livraison seule'},
+                {v:'À discuter',l:'À discuter'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl>Pour Power BI — vos données sont dans</Lbl>
+              <Chips value={get('data')} onChange={v=>set('data',v)} options={[
+                {v:'Fichiers Excel',l:'📊 Excel'},
+                {v:'Base de données SQL',l:'🗄️ Base SQL'},
+                {v:'Google Sheets',l:'📋 Google Sheets'},
+                {v:'Autre source de données',l:'❓ Autre'},
+              ]}/>
+            </div>
+            <div className="field">
+              <Lbl>Comment vous recontacter ?</Lbl>
+              <Chips value={get('suivi')} onChange={v=>set('suivi',v)} options={[
+                {v:'Appel découverte 20 min',l:'📞 Appel 20 min'},
+                {v:'Devis par email',l:'📧 Devis par email'},
+                {v:'WhatsApp',l:'💬 WhatsApp'},
+                {v:'Réunion Zoom / Meet',l:'🖥️ Zoom / Meet'},
+              ]}/>
+            </div>
+            <div className="field"><Lbl>Informations complémentaires</Lbl><textarea rows={3} value={get('plus')} onChange={e=>set('plus',e.target.value)} placeholder="Hébergeur souhaité, intégrations tierces, contraintes techniques, délais impératifs…"/></div>
+          </div>
+          <StepNav step={2} totalSteps={3} onBack={()=>setStep(1)} onSubmit={handleSubmit}/>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FORM PANEL WRAPPER
+═══════════════════════════════════════════════════════════════════════════ */
+const FORM_CONFIG = {
+  sh: {
+    label: 'Sir Heal', emoji: '🎵',
+    role: 'Compositeur & Sound Designer · Abidjan',
+    badge: 'Réponse sous 48h',
+    sub: "Remplissez ce formulaire en 3 minutes. Il nous permet de préparer votre devis ou de fixer un appel de 20 min avec le manager.",
+    cssVars: { '--ac':'var(--gold)','--ac-l':'var(--gold-l)','--ac-bg':'var(--gold-bg)' },
+    FormComponent: SirHealForm,
+  },
+  yo: {
+    label: 'Chef Yohou', emoji: '👩‍🍳',
+    role: 'Cheffe culinaire · Afro-Fusion · Abidjan',
+    badge: 'Réponse sous 48h',
+    sub: "Décrivez votre événement ou besoin culinaire. Ce formulaire nous permet de vous préparer une proposition sur mesure.",
+    cssVars: { '--ac':'var(--rouge)','--ac-l':'var(--rouge-l)','--ac-bg':'var(--rouge-bg)' },
+    FormComponent: ChefYohouForm,
+  },
+  jc: {
+    label: 'JCN Dev', emoji: '💻',
+    role: 'Développeur Web & Data · Paris – Abidjan',
+    badge: 'Estimation sous 48h',
+    sub: "Décrivez votre projet digital. Ce formulaire nous permet de vous préparer une estimation précise en 48h ou de fixer un appel découverte.",
+    cssVars: { '--ac':'var(--marine)','--ac-l':'var(--marine-l)','--ac-bg':'var(--marine-bg)' },
+    FormComponent: JCNDevForm,
+  },
+};
+
+function FormPanel({ id, visible, onToast }) {
+  const cfg = FORM_CONFIG[id];
+  const [key, setKey] = useState(0); // reset key
+
+  const handleCopyLink = () => {
+    const url = window.location.href.split('#')[0] + '#' + id;
+    copyText(url);
+    onToast('🔗 Lien copié !');
+  };
+
+  return (
+    <div className={`panel${visible?' on':''}`} style={cfg.cssVars}>
+      <div className="hero">
+        <div className="hero-tag">Fiche de demande client</div>
+        <div className="hero-name"><i>{cfg.label}</i></div>
+        <div className="hero-role">{cfg.role}</div>
+        <div className="hero-sub">{cfg.sub}</div>
+        <div className="hero-badge">{cfg.badge}</div>
+      </div>
+      <cfg.FormComponent key={key} onReset={()=>setKey(k=>k+1)}/>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP
+═══════════════════════════════════════════════════════════════════════════ */
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#0D0C0A"/>
+  <text x="16" y="22" font-family="Georgia,serif" font-size="18" font-weight="700" font-style="italic" fill="#C4882A" text-anchor="middle">T</text>
+  <line x1="6" y1="27" x2="26" y2="27" stroke="#996515" stroke-width="1.2"/>
+</svg>`;
+
+export default function App() {
+  const hash = useHash();
+  const [activeTab, setActiveTab] = useState('sh');
+
+  useEffect(() => {
+    // Favicon
+    const svg = FAVICON_SVG.trim();
+    const url = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.href = url;
+    document.title = 'Formulaires Clients — Talents CI';
+  }, []);
+  const [toast, setToast] = useState('');
+  const [copiedLink, setCopiedLink] = useState(null);
+
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2200);
+  }, []);
+
+  const copyLink = (id) => {
+    const url = window.location.href.split('#')[0] + '#' + id;
+    copyText(url);
+    setCopiedLink(id);
+    showToast('🔗 Lien copié dans le presse-papier');
+    setTimeout(() => setCopiedLink(null), 2500);
+  };
+
+  const goAll = () => { window.location.hash = ''; };
+  const goForm = (id) => { window.location.hash = id; };
+
+  // Determine what to show
+  const singleForm = ['sh','yo','jc'].includes(hash) ? hash : null;
+  const currentForm = singleForm || activeTab;
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{__html: CSS}}/>
+
+      {/* ── NAVBAR ── */}
+      <nav>
+        <button className="brand" onClick={goAll}>Talents <em>CI</em></button>
+
+        {singleForm ? (
+          // Single form mode: back link + form label
+          <div style={{display:'flex',alignItems:'center',gap:16,flex:1,justifyContent:'space-between'}}>
+            <button className="back-link" onClick={goAll}>← Tous les formulaires</button>
+            <span className="nav-form-label">{FORM_CONFIG[singleForm].emoji} {FORM_CONFIG[singleForm].label}</span>
+          </div>
+        ) : (
+          // All forms mode: tabs with copy-link buttons
+          <div className="tabs">
+            {['sh','yo','jc'].map(id => (
+              <div key={id} className="tab-group">
+                <button
+                  className={`tab${activeTab===id?' on':''}`}
+                  data-id={id}
+                  onClick={()=>setActiveTab(id)}
+                >
+                  {FORM_CONFIG[id].emoji} {FORM_CONFIG[id].label}
+                </button>
+                <button
+                  className={`copy-tab${copiedLink===id?' done':''}`}
+                  title={`Copier le lien direct pour ${FORM_CONFIG[id].label}`}
+                  onClick={()=>copyLink(id)}
+                >
+                  {copiedLink===id ? '✓' : '🔗 Lien'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </nav>
+
+      {/* ── FORM PANELS ── */}
+      {singleForm ? (
+        // Show only the requested form
+        <FormPanel id={singleForm} visible={true} onToast={showToast}/>
+      ) : (
+        // Show tabbed interface
+        <>
+          {['sh','yo','jc'].map(id => (
+            <FormPanel key={id} id={id} visible={activeTab===id} onToast={showToast}/>
+          ))}
+        </>
+      )}
+
+      <Toast msg={toast}/>
+    </>
+  );
+}
