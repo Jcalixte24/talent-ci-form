@@ -851,7 +851,7 @@ function JCNDevForm({ onReset }) {
             <Lbl>Vous avez actuellement (plusieurs choix)</Lbl>
             <CheckGroup cols={2} values={getA('exist')} onChange={v=>toggle('exist',v)} options={[
               {v:'Un site web existant',l:'Un site web existant'},
-              {v:'Une application mobile',l:'Une application mobile'},
+              {v:'Une application mobile et site web complet sur mesure',l:'Une application mobile et site web complet sur mesure'},
               {v:'Des données Excel / base SQL',l:'Données Excel / SQL'},
               {v:"Rien pour l'instant — démarrage de zéro",l:'Rien — démarrage de zéro'},
             ]}/>
@@ -919,7 +919,7 @@ function JCNDevForm({ onReset }) {
             <RadioGroup cols={2} value={get('budget')} onChange={v=>set('budget',v)} options={[
               {v:'Moins de 200 000 FCFA',l:'Moins de 200 000 FCFA',d:'Site vitrine simple'},
               {v:'200 000 – 500 000 FCFA',l:'200K – 500 000 FCFA',d:'Site + fonctionnalités'},
-              {v:'500 000 – 1 500 000 FCFA',l:'500K – 1 500 000 FCFA',d:'Application complète'},
+              {v:'500 000 – 1 500 000 FCFA',l:'650K – 1 500 000 FCFA',d:'Application complète et site web complet sur mesure '},
               {v:'Plus de 1 500 000 FCFA',l:'Plus de 1 500 000 FCFA',d:'Projet ambitieux'},
             ]}/>
           </div>
